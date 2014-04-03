@@ -1,24 +1,21 @@
-#!/usr/bin/python2.7
 import struct
 
 data = "45 00 00 47 73 88 40 00 40 06 a2 c4 83 9f 0e 85 83 9f 0e a1"
 
-# a test for the checksum calculation
+def carry_around_add(a, b):
+    c = a + b
+    return (c & 0xffff) + (c >> 16)
 
-def _checksum(data):
-    #calculate the header sum
-    ip_header_sum = sum(struct.unpack_from("6H", data))
-    #add the carry
-    ip_header_sum = (ip_header_sum & 0xFFFF) + (ip_header_sum >> 16 & 0xFFFF)
-    #invert the sum, python does not support inversion (~a is -a + 1) so we have to do
-    #little trick: ~a is the same as 0xFFFF & ~a
-    ip_header_sum = ~ip_header_sum & 0xFFFF
-
-    return ip_header_sum #should return 0 if correct
+def checksum(msg):
+    s = 0
+    for i in range(0, len(msg), 2):
+        w = ord(msg[i]) + (ord(msg[i+1]) << 8)
+        s = carry_around_add(s, w)
+    return ~s & 0xffff
 
 data = data.split()
 data = map(lambda x: int(x,16), data)
 data = struct.pack("%dB" % len(data), *data)
 
-print " ".join(map(lambda x: "0x%02x" % ord(x), data))
-print "Checksum: 0x%04x" % _checksum(data)
+print ' '.join('%02X' % ord(x) for x in data)
+print "Checksum: 0x%04x" % checksum(data)
